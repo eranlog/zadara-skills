@@ -21,7 +21,11 @@ Windows
         └─► CCVM (<ccvm-ip>, port 2022, zadministrator/Z@darA2o11)
 ```
 
-The CCVM IP is always **1 below** the CCMaster floating IP on the same subnet (e.g. CCMaster=172.16.7.121 → CCVM=172.16.7.120).
+**Convention:** CCMaster always ends in `1`, CCVM always ends in `0` — same subnet, adjacent IPs.
+- CCMaster = `172.16.x.y**1**` → CCVM = `172.16.x.y**0**`
+- Example: CCMaster=`172.16.7.121` → CCVM=`172.16.7.120`
+
+So given any CCMaster IP, the CCVM IP is always `CCMaster IP - 1`.
 
 ## Known QA Clouds
 
