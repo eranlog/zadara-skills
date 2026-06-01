@@ -4,9 +4,12 @@ Claude Code skills for Zadara QA infrastructure.
 
 ## Skills
 
-| Skill | Description |
-|---|---|
-| [ssh-ccvm](skills/ssh-ccvm/SKILL.md) | SSH into CCVM via CCMaster jump host |
+| Skill                                     | Description                                           |
+|-------------------------------------------|-------------------------------------------------------|
+| [ssh-ccvm](skills/ssh-ccvm/SKILL.md)      | SSH into CCVM via CCMaster jump host                  |
+| [zadara-ssh](skills/zadara-ssh/SKILL.md)  | SSH into any Zadara node: CCMaster, SN, CCVM, VPSA VC |
+| [logs](skills/logs/SKILL.md)              | Tail Zadara logs on VC, SN, or CCMaster               |
+| [zsnap](skills/zsnap/SKILL.md)            | Collect diagnostic snapshots and upload to S3         |
 
 ## Installation
 
@@ -15,8 +18,4 @@ cd ~/.claude/plugins
 git clone https://github.com/eranlog/zadara-skills
 ```
 
-Then restart Claude Code — skills are available immediately as `/ssh-ccvm` etc.
-
-## What is a Skill?
-
-Skills are reference guides that Claude Code loads automatically when they're relevant to the current task. They encode proven patterns so you don't have to re-explain them every session.
+Restart Claude Code — skills load automatically.
