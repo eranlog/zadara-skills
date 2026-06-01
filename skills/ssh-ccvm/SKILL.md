@@ -1,25 +1,38 @@
 ---
 name: ssh-ccvm
-description: Use when needing to SSH into the CCVM on a Zadara QA cloud. CCVM is isolated on the management network and hosts two applications — Command Center (cloud management UI) and eCommerce/Provisioning Portal (tenant self-service). Unreachable without going through the CCMaster jump host first.
+description: Use when needing to SSH into the CCVM on any Zadara QA storage cloud (QA8, QA11, QA14, QA27, etc.). CCVM is isolated on the management network and hosts two applications — Command Center (cloud management UI) and eCommerce/Provisioning Portal (tenant self-service). Unreachable without going through the CCMaster jump host first.
 ---
 
 # SSH to CCVM
 
 ## Overview
 
-CCVM is a virtual machine on the isolated management network (`172.16.7.x`). It hosts:
+CCVM is a virtual machine on the isolated management network of any QA storage cloud. It hosts:
 - **Command Center** — cloud/VPSA management UI
 - **eCommerce (Provisioning Portal)** — tenant self-service portal
 
-**CCVM is never reachable directly.** Always SSH through CCMaster first.
+**CCVM is never reachable directly.** Always SSH through the cloud's CCMaster first.
 
 ## Connection Chain
 
 ```
 Windows
-  └─► CCMaster (172.16.7.121, port 22, zadara/zadara)
-        └─► CCVM (172.16.7.120, port 2022, zadministrator/Z@darA2o11)
+  └─► CCMaster (<ccmaster-ip>, port 22, zadara/zadara)
+        └─► CCVM (<ccvm-ip>, port 2022, zadministrator/Z@darA2o11)
 ```
+
+The CCVM IP is always **1 below** the CCMaster floating IP on the same subnet (e.g. CCMaster=172.16.7.121 → CCVM=172.16.7.120).
+
+## Known QA Clouds
+
+| Cloud  | CCMaster IP   | CCVM IP       | CCMaster Hostkey |
+|--------|---------------|---------------|------------------|
+| QA8    | 172.16.7.121  | 172.16.7.120  | `SHA256:qBClZBxyfq7XhyY53j1rxN+CV2FNchRk0oQsJ3oqswQ` |
+| QA11   | 172.16.7.151  | 172.16.7.150  | (look up on first connect) |
+| QA14   | 172.16.7.191  | 172.16.7.190  | (look up on first connect) |
+| QA27   | 172.16.7.221  | 172.16.7.220  | (look up on first connect) |
+
+> If the hostkey is unknown, run: `"C:\Program Files\PuTTY\plink.exe" -pw zadara zadara@<ccmaster-ip> "hostname"` — plink will print the fingerprint.
 
 ## SSH Commands (Windows — plink.exe required)
 
@@ -30,8 +43,8 @@ Windows
 ```powershell
 "C:\Program Files\PuTTY\plink.exe" -batch -pw zadara `
   -hostkey "<ccmaster-hostkey>" `
-  zadara@172.16.7.121 `
-  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadministrator@172.16.7.120 '<command>'"
+  zadara@<ccmaster-ip> `
+  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadministrator@<ccvm-ip> '<command>'"
 ```
 
 ### Get root shell on CCVM
@@ -39,31 +52,28 @@ Windows
 ```powershell
 "C:\Program Files\PuTTY\plink.exe" -batch -pw zadara `
   -hostkey "<ccmaster-hostkey>" `
-  zadara@172.16.7.121 `
-  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadministrator@172.16.7.120 'echo Z@darA2o11 | sudo -S -i'"
+  zadara@<ccmaster-ip> `
+  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadministrator@<ccvm-ip> 'echo Z@darA2o11 | sudo -S -i'"
 ```
 
-## QA8 Reference
+## CCVM Credentials (all clouds)
 
-| Item | Value |
-|---|---|
-| CCMaster floating IP | `172.16.7.121` |
-| CCMaster hostkey (qa8-sn2) | `SHA256:qBClZBxyfq7XhyY53j1rxN+CV2FNchRk0oQsJ3oqswQ` |
-| CCVM IP | `172.16.7.120` |
-| CCVM port | `2022` |
-| CCVM user | `zadministrator` |
-| CCVM password | `Z@darA2o11` |
+| Item     | Value            |
+|----------|------------------|
+| Port     | `2022`           |
+| User     | `zadministrator` |
+| Password | `Z@darA2o11`     |
 
 ## Applications
 
 ### Command Center
-- URL: `http://172.16.7.120:8888` (use IP — hostname fails in headless browsers)
+- URL: `http://<ccvm-ip>:8888` (use IP — hostname fails in headless browsers)
 - Login: `qa@zadarastorage.com` / `1q2w3e4r`
 - Rails app: `/var/lib/zadara/command-center`
 - Sync: `rake sync` (run from `/var/lib/zadara/command-center`)
 
 ### eCommerce (Provisioning Portal)
-- URL: `https://172.16.7.120`
+- URL: `https://<ccvm-ip>`
 - Login: `admin` / `1q2w3e4r`
 - Rails app: `/var/lib/zadara/ecommerce-rails`
 
@@ -79,8 +89,8 @@ psql ecommerce-rails zadara
 
 | Issue | Fix |
 |---|---|
-| "Connection refused" on 172.16.7.121 | CCMaster floating IP moved after failover — get new hostkey from active SN |
-| Host key mismatch | Run `plink -batch -pw zadara zadara@172.16.7.121 "hostname"` to get new fingerprint |
+| "Connection refused" on CCMaster | Floating IP moved after failover — get new hostkey from active SN |
+| Host key mismatch | Run plink without `-hostkey` to see new fingerprint, then retry with it |
 | Can't reach CCVM directly | Expected — CCVM is on isolated mgmt network, must go via CCMaster |
 | OpenSSH fails | Use plink.exe — OpenSSH has key negotiation issues with older SSH on QA hosts |
 | sudo prompt | Always pipe password: `echo Z@darA2o11 \| sudo -S -i` |
