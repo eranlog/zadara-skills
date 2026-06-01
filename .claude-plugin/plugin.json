@@ -1,0 +1,13 @@
+{
+  "name": "zadara-skills",
+  "description": "Claude Code skills for Zadara QA infrastructure — SSH patterns, testing workflows, and debugging tools",
+  "version": "1.0.0",
+  "author": {
+    "name": "Eran Cohen",
+    "email": "eran@zadarastorage.com"
+  },
+  "homepage": "https://github.com/eranlog/zadara-skills",
+  "repository": "https://github.com/eranlog/zadara-skills",
+  "license": "MIT",
+  "keywords": ["zadara", "skills", "ssh", "qa", "infrastructure", "ccvm", "vpsa"]
+}
