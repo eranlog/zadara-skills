@@ -1,87 +1,77 @@
-Get an API access token from a VPSA using a VPSA-local user account.
+Use when VPSA REST API calls fail with "session expired" (status 1793) or "access denied", or when a fresh API token is needed to automate VPSA operations.
 
 ## Background
 
 The VPSA has its own user management, **separate from Command Center**.
 - `zadara_cloud_admin` is a CC proxy user — it cannot make VPSA API calls
-- You need a **VPSA-local user** (created inside the VPSA itself)
-- The token is session-based; pass it as `?access_key=<token>` or `X-Access-Key: <token>` header
+- Use the VPSA-local `admin` user (password `1q2w3e4r` on QA)
+- The key is persistent (not session-based) but calling this endpoint **resets** it — a new key is issued each time
 
 ## Usage
 
-- No args: prompts for VPSA frontend IP, username, password
 - With args: `<vpsa_frontend_ip> <username> <password>`
 
-Example: `vpsa-api-key 10.2.8.22 admin <vpsa-admin-pass>`
+Example: `vpsa-api-key 10.2.8.22 admin 1q2w3e4r`
 
-## Step 1 — Ensure a VPSA-local user exists
-
-If no user exists yet, create one via the VPSA GUI:
-```
-https://<vpsa-frontend-ip>   →  Settings → Users → Add User
-```
-Or check existing users (if you already have a token):
-```bash
-curl -sk "https://<vpsa-frontend-ip>/api/users.xml?access_key=<existing-token>"
-```
-
-## Step 2 — Get the token
+## Get the access key
 
 ```bash
 VPSA_IP="10.2.8.22"
-USER="admin"
-PASS="<vpsa-admin-pass>"
 
-TOKEN=$(curl -sk "https://$VPSA_IP/api/token?user=$USER&password=$PASS" \
-  | grep -oE "<auth-token>[^<]+" | grep -oE "[^>]+$")
-
-echo "Token: $TOKEN"
+curl -sk -X POST "https://$VPSA_IP/api/users/admin/access_key.json" \
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "1q2w3e4r"}'
 ```
 
-Response when successful:
-```xml
-<hash>
-  <status type="integer">0</status>
-  <user-key><your-api-token></user-key>
-  <auth-token><your-api-token></auth-token>
-</hash>
+Successful response:
+```json
+{"response": {"status": 0, "key": "KFY29E5BT3KLENKT47TS-3", "message": "Access key changed."}}
 ```
 
-## Step 3 — Use the token
+Extract the key directly:
+```bash
+KEY=$(curl -sk -X POST "https://$VPSA_IP/api/users/admin/access_key.json" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "1q2w3e4r"}' \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['response']['key'])")
+echo "Key: $KEY"
+```
+
+## Use the key in API calls
 
 ```bash
 # As query param
-curl -sk "https://$VPSA_IP/api/servers.xml?access_key=$TOKEN"
+curl -sk "https://$VPSA_IP/api/servers.xml?access_key=$KEY"
 
-# As header (preferred for vpsa_linux.sh and POST requests)
-curl -sk "https://$VPSA_IP/api/servers.xml" -H "X-Access-Key: $TOKEN"
+# As header
+curl -sk "https://$VPSA_IP/api/servers.xml" -H "X-Access-Key: $KEY"
 ```
 
-## From Windows (via VC)
-
-Run the curl through the active VC using plink:
+## From Windows (via active VC with plink)
 
 ```powershell
 $VPSA_IP = "10.2.8.22"
-$VC_IP   = "10.0.8.22"    # active VC mgmt IP
+$VC_IP   = "10.0.8.22"
 
 "C:\Program Files\PuTTY\plink.exe" -batch -pw zadara `
   -hostkey "SHA256:qBClZBxyfq7XhyY53j1rxN+CV2FNchRk0oQsJ3oqswQ" `
   zadara@172.16.7.121 `
-  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP `
-   'curl -sk https://$VPSA_IP/api/token?user=admin\&password=<vpsa-admin-pass> | grep -oE \"<auth-token>[^<]+\" | grep -oE \"[^>]+$\"'"
+  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP 'curl -sk -X POST https://$VPSA_IP/api/users/admin/access_key.json -H Content-Type:application/json -d {\"username\":\"admin\",\"password\":\"1q2w3e4r\"}'"
 ```
 
-## Known working tokens (QA8)
+## Alternative: extract from vpsa_linux.sh
 
-| VPSA | Frontend IP | Token (session) | Retrieved |
-|------|-------------|-----------------|-----------|
-| H101 (vsa-0000002e) | 10.2.8.22 | <your-api-token> | 2026-06-01 |
+If `vpsa_linux.sh` was already downloaded on a server, the key is baked in:
 
-> Tokens are session-scoped and expire. Re-run Step 2 to get a fresh one.
+```bash
+grep ACCESSKEY ~/vpsa_linux.sh | head -1
+# ACCESSKEY="KFY29E5BT3KLENKT47TS-3"
+```
 
 ## Notes
 
-- Status `1793 - Your session expired` usually means wrong username, not expired token
-- The CC wizard (Servers → ADD → Automatic) bakes a token into `vpsa_linux.sh` at download time — extract with: `grep ACCESSKEY ~/vpsa_linux.sh | head -1`
-- For scripts, prefer generating a fresh token at runtime rather than hardcoding
+- **⚠ Resets the key** — calling this endpoint issues a new key and invalidates the old one
+- `otp_attempt` field is optional — omit it for QA environments
+- Wrong credentials return: `{"status": 5, "message": "Invalid credentials."}`
+- The CC wizard (Servers → ADD → Automatic) uses this same endpoint internally to bake the key into `vpsa_linux.sh`

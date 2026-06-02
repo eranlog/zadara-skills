@@ -1,4 +1,4 @@
-Connect a Linux server to a VPSA iSCSI volume and verify IO end-to-end.
+Use when iSCSI login fails with error 24 (authorization failure), or when setting up a fresh Linux server to access Zadara VPSA block storage for the first time.
 Covers: server registration → iSCSI connect → volume attach → IO verify.
 
 ## Prerequisites

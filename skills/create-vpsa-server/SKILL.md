@@ -1,4 +1,4 @@
-Create a server record on a VPSA and establish iSCSI connectivity from a Linux client.
+Use when registering a new Linux server on a VPSA via REST API — not vpsa_linux.sh — especially when API returns status 1793 or authorization errors.
 
 ## What it does
 

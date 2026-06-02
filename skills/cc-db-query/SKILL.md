@@ -1,4 +1,4 @@
-Run a SQL query against the Command Center database (command-center or ecommerce-rails) on CCVM.
+Use when querying authoritative cloud/VPSA data not available via nova or the GUI — cloud creation dates, SN history, ecommerce records, or any ad-hoc SQL against the CC database.
 
 ## Connection chain
 

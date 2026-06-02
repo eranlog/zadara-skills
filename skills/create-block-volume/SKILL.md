@@ -1,4 +1,4 @@
-Create one or more block volumes on a VPSA via the REST API, then verify with zadara_cfg.
+Use when creating block volumes on a VPSA, particularly when zadara_cfg create_volume fails with "data reduction bundle is disabled" or when automating volume creation via REST API.
 
 ## Arguments
 
