@@ -1,4 +1,4 @@
-Attach a Linux server to a QA8 VPSA via iSCSI, then attach a volume to it.
+Use when an IO server needs to be connected to a QA8 VPSA volume for the first time and vpsa_linux.sh is not available or not desired.
 
 ## Overview
 
@@ -27,7 +27,7 @@ ip addr show febond | grep "inet " | awk '{print $2}' | cut -d/ -f1
 Get an API token using the **`vpsa-api-key`** skill (needs a VPSA-local user — NOT `zadara_cloud_admin`):
 
 ```bash
-TOKEN=$(curl -sk "https://10.2.8.22/api/token?user=admin&password=<vpsa-admin-pass>" \
+TOKEN=$(curl -sk "https://10.2.8.22/api/token?user=admin&password=1q2w3e4r" \
   | grep -oE "<auth-token>[^<]+" | grep -oE "[^>]+$")
 ```
 
@@ -35,7 +35,7 @@ Or extract from a previously downloaded `vpsa_linux.sh`:
 
 ```bash
 grep ACCESSKEY ~/vpsa_linux.sh | head -1
-# ACCESSKEY="<your-api-token>"
+# ACCESSKEY="E39GIPFB9HQ5OZ5PH8J1-209"
 ```
 
 ### Step 2 — Run vpsa_linux.sh on the client server
