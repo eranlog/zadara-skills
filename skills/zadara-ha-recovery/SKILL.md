@@ -1,4 +1,8 @@
-Use when the QA8 CCMaster floating IP is unreachable, crm_mon fails with "Transport endpoint is not connected", or get-ha-state returns "Cluster Resource Manager is not running" — typically after a cloud upgrade.
+Use when the QA8 CCMaster floating IP is unreachable after an SN reboot or cloud upgrade, and crm_mon fails with "Transport endpoint is not connected" or get-ha-state returns "Cluster Resource Manager is not running".
+
+## Important: This is expected behavior
+
+After an SN boots, HA takes several minutes to come up — this is by design, not a bug. The SN runs a lengthy VF setup (mlx5 unbind, ~2–5 min) before heartbeat starts. **Just wait.** Only intervene if it hasn't recovered after ~10 minutes.
 
 ## Key facts
 
