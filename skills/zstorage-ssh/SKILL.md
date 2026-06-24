@@ -62,21 +62,26 @@ ssh-keyscan -p 22 $CCMASTER_IP 2>/dev/null | ssh-keygen -lf - | awk '{print $2}'
 ## 1. SSH to CCMaster
 
 ### WSL / macOS / Linux (preferred)
+
+> Add `-o UserKnownHostsFile=/dev/null` so that CCMaster floating to a different SN (and changing its hostkey) never blocks the connection.
+
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP "<command>"
 ```
 
 **Elevate to root:**
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP "echo zadara | sudo -S -i bash -c '<command>'"
 ```
 
 **From Claude Bash tool (via WSL):**
 ```bash
 wsl -d Ubuntu-24.04 -u root -- sshpass -p zadara ssh \
-  -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP "<command>"
 ```
 
@@ -107,14 +112,16 @@ SNs are reachable from CCMaster by hostname only — no direct external SSH.
 
 ### WSL / macOS / Linux (preferred)
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p zadara ssh -o StrictHostKeyChecking=no $SN_HOSTNAME '<command>'"
 ```
 
 **As root on SN:**
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p zadara ssh -o StrictHostKeyChecking=no $SN_HOSTNAME \
    'echo zadara | sudo -S -i bash -c \"<command>\"'"
@@ -122,7 +129,8 @@ sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
 
 **Find which SN is active CCMaster:**
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP "hostname"
 ```
 
@@ -142,7 +150,8 @@ CCVM is reached via CCMaster. IP = CCMaster IP minus 1. Port 2022.
 
 ### WSL / macOS / Linux (preferred)
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no \
    zadministrator@$CCVM_IP '<command>'"
@@ -174,7 +183,8 @@ Find role `A` row → extract `VC_IP` from `fixed_IPs`.
 
 **Single command:**
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no \
    zadara@$VC_IP '<command>'"
@@ -182,14 +192,16 @@ sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
 
 **Interactive shell (add -t / -tt):**
 ```bash
-sshpass -p zadara ssh -t -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh -t \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' ssh -tt -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP"
 ```
 
 **Root shell:**
 ```bash
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
   zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no \
    zadara@$VC_IP 'echo Z@darA2o11 | sudo -S -i bash -c \"<command>\"'"
@@ -216,7 +228,9 @@ When a command contains `$`, quotes, or special chars that break across SSH hops
 CMD='python3 -c "import bcrypt; print(bcrypt.hashpw(b\"pass\", bcrypt.gensalt()).decode())"'
 B64=$(echo "$CMD" | base64 -w0)
 
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@$CCMASTER_IP \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
+  zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP \
    'echo Z@darA2o11 | sudo -S -i bash -c \"echo ${B64} | base64 -d | bash\"'"
 ```
@@ -240,14 +254,18 @@ $b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($script))
 ### WSL / macOS / Linux
 ```bash
 # Download from CCMaster to local
-sshpass -p zadara scp -o StrictHostKeyChecking=no \
+sshpass -p zadara scp \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
   zadara@$CCMASTER_IP:/path/to/file.tar.gz ./file.tar.gz
 
 # Download from VC (stage via CCMaster first)
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@$CCMASTER_IP \
+sshpass -p zadara ssh \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
+  zadara@$CCMASTER_IP \
   "sshpass -p 'Z@darA2o11' scp -P 2022 -o StrictHostKeyChecking=no \
    zadara@$VC_IP:/path/file /tmp/file"
-sshpass -p zadara scp -o StrictHostKeyChecking=no \
+sshpass -p zadara scp \
+  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
   zadara@$CCMASTER_IP:/tmp/file ./file
 ```
 
@@ -263,6 +281,7 @@ sshpass -p zadara scp -o StrictHostKeyChecking=no \
 ## Notes
 
 - **WSL works out of the box** — `ping $CCMASTER_IP` reaches CCMaster via NAT. No extra networking config needed.
+- **`UserKnownHostsFile=/dev/null`** — always add this on the outer hop. `StrictHostKeyChecking=no` alone won't override a *changed* key in `~/.ssh/known_hosts`; when CCMaster floats between SNs its hostkey changes. This flag bypasses the known_hosts file entirely.
 - **macOS**: same commands as WSL. Install sshpass via `brew install hudochenkov/sshpass/sshpass`.
 - **plink.exe hostkey**: changes when CCMaster floats between SNs. With WSL/sshpass, `StrictHostKeyChecking=no` handles this transparently.
 - **sudo -S**: always needed when piping password to sudo (no terminal).
