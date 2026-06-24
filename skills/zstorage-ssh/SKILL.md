@@ -95,14 +95,7 @@ wsl -d Ubuntu-24.04 -u root -- sshpass -p zadara ssh \
 > Hostkey changes when CCMaster floats to the other SN. With WSL/sshpass, `StrictHostKeyChecking=no` handles this automatically.
 
 ### If "Connection refused" on CCMaster
-Ubuntu Noble sshd socket-activation issue. Fix via JViewer/console on the active SN:
-```bash
-systemctl disable ssh.socket
-systemctl enable ssh.service
-systemctl start ssh.service     # CRITICAL — enable alone does NOT start it
-ss -tlnp | grep :22             # verify 0.0.0.0:22 listening
-```
-Must be applied on **both SNs** in the HA pair.
+Ubuntu Noble sshd socket-activation issue. Run `scripts/fix-ccmaster-sshd.sh` as root on each SN directly (console/JViewer — you can't SSH to the floating IP if it's down). Must be applied on **both SNs** in the HA pair.
 
 ---
 
@@ -221,31 +214,13 @@ sshpass -p zadara ssh \
 
 ## 5. Complex quoting — base64 trick
 
-When a command contains `$`, quotes, or special chars that break across SSH hops:
+When a command contains `$`, quotes, or special chars that break across SSH hops, use `scripts/ssh-base64-cmd.sh`:
 
-### WSL / macOS / Linux
 ```bash
-CMD='python3 -c "import bcrypt; print(bcrypt.hashpw(b\"pass\", bcrypt.gensalt()).decode())"'
-B64=$(echo "$CMD" | base64 -w0)
-
-sshpass -p zadara ssh \
-  -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no \
-  zadara@$CCMASTER_IP \
-  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP \
-   'echo Z@darA2o11 | sudo -S -i bash -c \"echo ${B64} | base64 -d | bash\"'"
+scripts/ssh-base64-cmd.sh $CCMASTER_IP $VC_IP "<command>"
 ```
 
-### Windows fallback (PowerShell + plink)
-```powershell
-$script = 'python3 -c "import bcrypt; print(bcrypt.hashpw(b\"pass\", bcrypt.gensalt()).decode())"'
-$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($script))
-
-"C:\Program Files\PuTTY\plink.exe" -batch -pw zadara `
-  -hostkey "$CCMASTER_HOSTKEY" `
-  zadara@$CCMASTER_IP `
-  "sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadara@$VC_IP `
-   'echo Z@darA2o11 | sudo -S -i bash -c \"echo $b64 | base64 -d | bash\"'"
-```
+The script base64-encodes the command locally so no quoting survives the hops. For Windows/plink, apply the same pattern manually: encode with `[Convert]::ToBase64String(...)` in PowerShell, then decode with `base64 -d | bash` on the remote end.
 
 ---
 

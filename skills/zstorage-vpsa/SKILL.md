@@ -70,21 +70,11 @@ nova-manage vsa orphan --action=clean --objects=instances --force
 
 ## Recovery: VPSA stuck in `failed` state
 
-```bash
-# 1. Force status to 'created' so hibernate can proceed
-nova-manage vsa update --id=<ID> --status=created
+Run `scripts/vpsa-recover-failed.sh <vsa-numeric-id> <tenant_id>` on CCMaster as root.
 
-# 2. Hibernate normally
-nova-manage vsa hibernate --id=<ID>
+The script forces status to `created`, hibernates, detects if stuck in `hibernate_offlining` and forces past it, then restores.
 
-# 3. If hibernate gets stuck in 'hibernate_offlining':
-nova-manage vsa update --id=<ID> --status=hibernated
-
-# 4. Restore to clean state
-nova-manage vsa restore --id=<ID> --tenant_id <tenant_id> --user admin
-```
-
-**Why del_vc --force often fails:** Requires compute service to be DOWN on the instance's host SN. Use the status-forcing approach above instead.
+**Why del_vc --force often fails:** Requires compute service to be DOWN on the instance's host SN. Use the status-forcing approach instead.
 
 ## Recovery: VCs stuck in `restoring` state
 
@@ -102,20 +92,9 @@ tail -f /var/log/nova/nova-vsa.log | grep "VSA ID <ID>"
 
 Reproduces the bug where two simultaneous restore requests spawn duplicate vc-0 instances.
 
-```bash
-# 1. Hibernate first
-nova-manage vsa hibernate --id=<ID>
-# Wait for 'hibernated' status:
-watch -n5 "nova-manage vsa list --id=<ID> 2>/dev/null"
+Run `scripts/vpsa-double-restore-race.sh <vsa-numeric-id> <tenant_id>` on CCMaster as root.
 
-# 2. Fire two simultaneous restores (simulates UI double-click)
-nova-manage vsa restore --id=<ID> --tenant_id <tenant_id> --user admin &
-nova-manage vsa restore --id=<ID> --tenant_id <tenant_id> --user admin &
-wait
-
-# 3. Check 30s later — look for duplicate vc-0
-nova-manage vsa list --id=<ID> --all 2>/dev/null
-```
+The script hibernates the VPSA, waits for `hibernated`, fires two parallel `restore` calls, waits 30s, then shows the instance list.
 
 **Bug result (unfixed):** VPSA → `failed`, two `vc-0` instances on different SNs, both created at same timestamp.  
 **Fixed result:** VPSA → `created`, exactly 2 instances (vc-0 + vc-1).

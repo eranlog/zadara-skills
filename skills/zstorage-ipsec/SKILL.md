@@ -80,52 +80,9 @@ This is included by `/etc/ipsec.conf` via `include /sys/kernel/zadara-utils/safe
 
 ## Step 4 — Configure strongSwan on client server
 
-**Install (on client server):**
-```bash
-apt-get install -y strongswan
-```
+Run `scripts/ipsec-client-setup.sh <client_storage_ip> <vpsa_bebond_ip> <vpsa_name> <psk>` as root on the client server.
 
-**Write `/etc/ipsec.conf`:**
-```
-config setup
-    strictcrlpolicy=no
-    uniqueids=yes
-
-conn %default
-    ike=aes128-sha1-modp1024!
-    esp=aes128-sha1!
-    ikelifetime=3h
-    lifetime=1h
-    margintime=9m
-    keyexchange=ikev1
-    keyingtries=1
-    rekey=no
-    reauth=yes
-    dpdaction=clear
-    dpddelay=30s
-    dpdtimeout=150s
-    type=transport
-    leftauth=psk
-    rightauth=psk
-    aggressive=no
-
-conn vpsa-<name>
-    left=<client_storage_ip>
-    leftprotoport=tcp
-    right=<vpsa_bebond_ip>
-    rightprotoport=tcp/3260
-    auto=start
-```
-
-**Write `/etc/ipsec.secrets` (chmod 600):**
-```
-: PSK "<psk_from_step_2>"
-```
-
-**Start:**
-```bash
-systemctl restart strongswan-starter
-```
+The script installs strongSwan, writes `/etc/ipsec.conf` and `/etc/ipsec.secrets` with IKEv1/AES128/PSK transport mode config, starts the service, and runs `ipsec status`.
 
 ---
 
@@ -134,10 +91,8 @@ systemctl restart strongswan-starter
 **On client server:**
 ```bash
 ipsec status
-# Expected:
-# Security Associations (1 up, 0 connecting):
-#    vpsa-<name>[1]: ESTABLISHED ... <client_storage_ip>...<vpsa_bebond_ip>
-#    vpsa-<name>{1}:  INSTALLED, TRANSPORT, reqid 1, ESP SPIs: ...
+# Expected: Security Associations (1 up, 0 connecting)
+#   vpsa-<name>[1]: ESTABLISHED ... <client_storage_ip>...<vpsa_bebond_ip>
 ```
 
 **On VPSA VC:**

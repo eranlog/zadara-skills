@@ -152,21 +152,9 @@ curl -sk "$BASE/api/servers.json?access_key=$KEY"
 
 ## Connect iSCSI volume from Linux client
 
-After attaching volume to a server and iSCSI is configured:
+After attaching volume to a server and iSCSI is configured, run `scripts/iscsi-connect-and-test.sh <vpsa_bebond_ip>` as root on the client server.
 
-```bash
-# Discover targets
-iscsiadm -m discovery -t sendtargets -p <vpsa_bebond_ip>
-
-# Login to all discovered targets
-iscsiadm -m node --loginall=all
-
-# Check connected block device
-lsblk | grep sd
-
-# Run IO test
-dd if=/dev/urandom of=/dev/<device> bs=1M count=100 oflag=direct
-```
+The script discovers targets, logs in, shows connected block devices, and prints the `dd` IO test command.
 
 ---
 

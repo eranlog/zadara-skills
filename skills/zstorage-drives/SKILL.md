@@ -55,31 +55,11 @@ zconfig.py --get cloud.uuid
 # Example output: 41b17d81-3088-418b-acbb-5af38ceb46f5
 ```
 
-### Step 3 — Delete old cloud_uuid tag(s) from all VGs
-```bash
-# Run once per stale UUID found in step 1
-vgchange --deltag cloud_uuid+<stale_uuid>
-# Example: vgchange --deltag cloud_uuid+c43f3667-fd7a-4673-9caa-76582f5bc7c4
-# This safely no-ops on VGs that don't have the tag
-```
+### Steps 3–5 — Apply fix
 
-### Step 4 — Add the correct cloud UUID to all zadara VGs
-```bash
-# List zadara VG names, then add tag to each
-vgchange --addtag cloud_uuid+<correct_uuid> \
-  zadara_<wwn1> zadara_<wwn2> ...
-# Or loop:
-# for vg in $(vgs --noheadings -o vg_name | tr -d ' ' | grep zadara); do
-#   vgchange --addtag cloud_uuid+<correct_uuid> "$vg"
-# done
-```
+Run `scripts/fix-drive-cloud-uuid.sh <stale_uuid> <correct_uuid>` on the SN as root.
 
-### Step 5 — Restart zadara-sn service
-```bash
-service zadara-sn restart
-# Verify:
-service zadara-sn status --no-pager | head -5
-```
+The script: removes the stale cloud_uuid tag from all zadara VGs, adds the correct UUID, restarts `zadara-sn`, and verifies drives are now visible to nova.
 
 ### Step 6 — Verify drives appear in CC
 Check the CC Storage Nodes page — the SN should now show the correct drive count (14 Free / 0 Absent).
