@@ -1,6 +1,7 @@
 ---
 name: zstorage-vpsa-api
-description: Use when querying or operating the Zadara VPSA REST API — listing volumes, pools, servers, attachments, snapshots, or checking VC health. Always run curl via CCMaster (internal IP 10.0.8.x) since external VPSA URLs time out from WSL. Auth via X-Access-Key header.
+description: Use when querying or operating the Zadara VPSA REST API — listing volumes, pools, servers, attachments, snapshots, or checking VC health. Run curl from CCMaster to the internal VC IP since external VPSA URLs time out from WSL. Auth via X-Access-Key header.
+argument-hint: <vsa-id>
 ---
 
 # zstorage-vpsa-api
@@ -11,33 +12,32 @@ Query and operate the Zadara VPSA (Virtual Private Storage Array) REST API — v
 
 ---
 
-## Endpoint & Auth
+## Setup
 
 ```
-Base URL : https://vsa-<id>-<cloud-host>.zadaravpsa.com/api
+Base URL : https://$VC_IP/api      (internal VC management IP)
 Auth     : X-Access-Key: <api_key>   (header)
         OR ?api_key=<api_key>         (query param)
 Format   : JSON — all responses under a top-level key matching the resource
 ```
 
-**QA8 FARM1 VPSA (vsa-00000011):**
-```
-URL     : https://vsa-00000011-zadara-qa8.zadaravpsa.com
-User    : admin / 1q2w3e4r
-```
-
-Get the API key — use skill `/vpsa-api-key`, or via VPSA UI: Settings → User → API key.
-
-**Run curl via CCMaster (external VPSA URL times out from WSL):**
+**Step 1 — Get active VC IP** (see [[zstorage-ssh]] → Finding IPs):
 ```bash
-# From WSL — double-hop to CCMaster, then curl to internal VC IP
-sshpass -p zadara ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
-  zadara@172.16.7.121 \
-  "curl -sk -X GET 'https://10.0.8.24/api/<path>.json' -H 'X-Access-Key: <api_key>'"
+# On CCMaster:
+nova-manage vsa list --inst <vsa-id>
+# Find the row with role "A" → first 10.0.x.x in fixed_IPs = $VC_IP
 ```
 
-Internal VC IP for QA8 FARM1: `10.0.8.24` (active VC-0).  
-Use `/vpsa-api-key` skill to get the access key first.
+**Step 2 — Get API key** — use [[vpsa-api-key]] skill, or: VPSA UI → Settings → User → API key.
+
+**Step 3 — Run curl via CCMaster** (external VPSA URL times out from WSL):
+```bash
+# Double-hop to CCMaster, then curl internal VC IP — see [[zstorage-ssh]] for full pattern
+VC_IP="<active-vc-ip>"
+KEY="<api_key>"
+# On CCMaster:
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/<path>.json"
+```
 
 ---
 
@@ -45,14 +45,12 @@ Use `/vpsa-api-key` skill to get the access key first.
 
 ### Get VPSA status
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/vpsaversion.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/vpsaversion.json"
 ```
 
 ### Get controllers (VC status, active/standby)
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/vcontrollers.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/vcontrollers.json"
 ```
 Active VC has `"state": "active"`.
 
@@ -62,17 +60,16 @@ Active VC has `"state": "active"`.
 
 ### List pools
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/pools.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/pools.json"
 ```
 
 ### Create pool
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"name":"pool1","capacity":100,"raid_groups":"1"}' \
-  'https://10.0.8.24/api/pools.json'
+  "https://$VC_IP/api/pools.json"
 ```
 
 ---
@@ -81,30 +78,28 @@ curl -sk -X POST \
 
 ### List all volumes
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/volumes.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/volumes.json"
 ```
 
 ### Get single volume
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/volumes/<volume_name>.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/volumes/<volume_name>.json"
 ```
 
 ### Create volume (block iSCSI)
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"name":"vol1","pool":"pool1","size":10,"block_size":512}' \
-  'https://10.0.8.24/api/volumes.json'
+  "https://$VC_IP/api/volumes.json"
 ```
 
 ### Delete volume
 ```bash
 curl -sk -X DELETE \
-  -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/volumes/<volume_name>.json'
+  -H "X-Access-Key: $KEY" \
+  "https://$VC_IP/api/volumes/<volume_name>.json"
 ```
 
 ---
@@ -113,17 +108,16 @@ curl -sk -X DELETE \
 
 ### List servers
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/servers.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/servers.json"
 ```
 
 ### Create server (iSCSI initiator)
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"display_name":"my-server","iqn":"iqn.2004-10.com.ubuntu:01:abc123"}' \
-  'https://10.0.8.24/api/servers.json'
+  "https://$VC_IP/api/servers.json"
 ```
 
 ### Get local iSCSI IQN (run on the client host)
@@ -138,25 +132,24 @@ cat /etc/iscsi/initiatorname.iscsi
 ### Attach volume to server
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"volume_name":"vol1","server_name":"my-server","access_type":"rw"}' \
-  'https://10.0.8.24/api/volumes/vol1/attach.json'
+  "https://$VC_IP/api/volumes/vol1/attach.json"
 ```
 
 ### Detach volume from server
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"server_name":"my-server","force":"NO"}' \
-  'https://10.0.8.24/api/volumes/vol1/detach.json'
+  "https://$VC_IP/api/volumes/vol1/detach.json"
 ```
 
 ### List volume attachments
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/volumes/vol1/servers.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/volumes/vol1/servers.json"
 ```
 
 ---
@@ -165,17 +158,16 @@ curl -sk -H 'X-Access-Key: <key>' \
 
 ### List snapshots for a volume
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/volumes/<vol>/snapshots.json'
+curl -sk -H "X-Access-Key: $KEY" "https://$VC_IP/api/volumes/<vol>/snapshots.json"
 ```
 
 ### Create snapshot
 ```bash
 curl -sk -X POST \
-  -H 'X-Access-Key: <key>' \
-  -H 'Content-Type: application/json' \
+  -H "X-Access-Key: $KEY" \
+  -H "Content-Type: application/json" \
   -d '{"display_name":"snap1"}' \
-  'https://10.0.8.24/api/volumes/<vol>/snapshots.json'
+  "https://$VC_IP/api/volumes/<vol>/snapshots.json"
 ```
 
 ---
@@ -185,8 +177,8 @@ curl -sk -X POST \
 > **Note:** Logs endpoint path not confirmed — `/api/logs.json` returned 404 in live testing. Check Swagger UI for the correct path.
 
 ```bash
-curl -sk -H 'X-Access-Key: <key>' \
-  'https://10.0.8.24/api/logs.json?per_page=20' \
+curl -sk -H "X-Access-Key: $KEY" \
+  "https://$VC_IP/api/logs.json?per_page=20" \
   | jq '.response.logs[] | {severity, description}'
 ```
 
@@ -196,6 +188,6 @@ curl -sk -H 'X-Access-Key: <key>' \
 
 - All endpoints return `{"response": {...}, "status": 0}` on success. `status != 0` means error — check `"message"` field.
 - `-k` flag required (self-signed cert).
-- **WSL cannot reach `vsa-*.zadaravpsa.com` external URLs** — always run curl via CCMaster to internal VC IP (`10.0.8.24` for QA8 FARM1 vc-0).
-- Use `/vpsa-api-key` skill to retrieve or rotate the API key. The access_key POST also uses internal IP via CCMaster.
-- For SSO-enabled VPSAs, local admin credentials bypass SSO — use `admin/1q2w3e4r` for QA8 FARM1.
+- External VPSA URLs (`vsa-*.zadaravpsa.com`) time out from WSL — always curl the internal VC IP via CCMaster.
+- The VPSA management IP (novabridge, `10.0.x.x`) is for API access. The bebond IP (`10.2.x.x`) is for storage traffic only.
+- For SSO-enabled VPSAs, local `admin` credentials bypass SSO — use for QA lab testing.

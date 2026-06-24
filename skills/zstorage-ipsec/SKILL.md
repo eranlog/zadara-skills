@@ -1,6 +1,7 @@
 ---
 name: zstorage-ipsec
-description: Use when configuring or troubleshooting IPsec between a VPSA and an iSCSI client — strongSwan transport mode IKEv1 PSK setup, SA verification, tcpdump traffic confirmation, or Phase 2 failure debugging. Includes QA8 H101 reference values (PSK, IPs, server name).
+description: Use when configuring or troubleshooting IPsec between a VPSA and an iSCSI client — strongSwan transport mode IKEv1 PSK setup, SA verification, tcpdump traffic confirmation, or Phase 2 failure debugging.
+argument-hint: <vsa-id>
 ---
 
 # zstorage-ipsec
@@ -17,7 +18,7 @@ Configure IPsec between a Zadara VPSA and an iSCSI client server. Uses strongSwa
 
 ```
 VPSA VC (strongSwan responder)          iSCSI Client (strongSwan initiator)
-  bebond: 10.2.8.33                          storage NIC: 10.2.8.223
+  bebond: <vpsa_bebond_ip>                   storage NIC: <client_storage_ip>
   leftprotoport=tcp/3260                     leftprotoport=tcp
          <======= IKEv1 transport mode ESP =======>
 ```
@@ -32,22 +33,18 @@ VPSA VC (strongSwan responder)          iSCSI Client (strongSwan initiator)
 
 ## Step 1 — Get VPSA API access key
 
-Log into the VPSA GUI at `https://<bebond_ip>` with admin credentials. Go to **admin → RESET ACCESS KEY**.
-
-Or retrieve it from the DB on the VC:
-```bash
-mysql -u activeGui -p4zV5lCBTbp vsa_gui_4 -e "SELECT authentication_token FROM users WHERE username='admin';"
-```
+Use [[vpsa-api-key]] skill to retrieve or rotate the API key. Or: VPSA GUI → admin → RESET ACCESS KEY.
 
 ---
 
 ## Step 2 — Get the VPSA PSK
 
-**Run on VPSA VC (from CCMaster via sshpass, port 2022):**
+**Run on VPSA VC (via CCMaster double-hop — see [[zstorage-ssh]]):**
 
 ```bash
+# On the VC:
 cat /sys/kernel/zadara-utils/safe/ipsecsecret
-# Output: : PSK "B9A052CE851F4185AF255A02514F3612"
+# Output: : PSK "<psk_value>"
 ```
 
 The PSK is used for both sides.
@@ -56,25 +53,25 @@ The PSK is used for both sides.
 
 ## Step 3 — Add server to VPSA with IPsec enabled
 
-**Run from any SN with curl access to VPSA novabridge IP (10.0.8.x):**
+**Run from any SN with curl access to the VPSA novabridge IP:**
 
 ```bash
 # Add server with iSCSI IP and IPsec enabled
 curl -sk "https://<vpsa_nova_ip>/api/servers.json?access_key=<key>" \
   -X POST \
-  -d "display_name=<name>&iqn=<iqn>&iscsi=<server_storage_ip>&ipsec_iscsi=YES"
+  -d "display_name=<name>&iqn=<iqn>&iscsi=<client_storage_ip>&ipsec_iscsi=YES"
 # Returns: {"response":{"server_name":"srv-00000001","status":0}}
 
 # Verify IPsec is enabled and IP is set
 curl -sk "https://<vpsa_nova_ip>/api/servers/srv-00000001.json?access_key=<key>"
-# Check: "iscsi_ip":"10.2.8.223","ipsec_iscsi":"1"
+# Check: "iscsi_ip":"<client_storage_ip>","ipsec_iscsi":"1"
 ```
 
 VPSA automatically creates `/sys/kernel/zadara-utils/safe/ipsecconf_<server_name>`:
 ```
 conn <server_name>__iscsi
     leftprotoport=tcp/3260
-    right=<server_storage_ip>
+    right=<client_storage_ip>
 ```
 
 This is included by `/etc/ipsec.conf` via `include /sys/kernel/zadara-utils/safe/ipsecconf_*`.
@@ -83,7 +80,7 @@ This is included by `/etc/ipsec.conf` via `include /sys/kernel/zadara-utils/safe
 
 ## Step 4 — Configure strongSwan on client server
 
-**Install (on client server — NOT on QA8 SNs):**
+**Install (on client server):**
 ```bash
 apt-get install -y strongswan
 ```
@@ -113,9 +110,9 @@ conn %default
     aggressive=no
 
 conn vpsa-<name>
-    left=<server_storage_ip>      # e.g. 10.2.8.223
+    left=<client_storage_ip>
     leftprotoport=tcp
-    right=<vpsa_bebond_ip>        # e.g. 10.2.8.33
+    right=<vpsa_bebond_ip>
     rightprotoport=tcp/3260
     auto=start
 ```
@@ -139,9 +136,8 @@ systemctl restart strongswan-starter
 ipsec status
 # Expected:
 # Security Associations (1 up, 0 connecting):
-#    vpsa-h101[1]: ESTABLISHED 3 seconds ago, 10.2.8.223[10.2.8.223]...10.2.8.33[10.2.8.33]
-#    vpsa-h101{1}:  INSTALLED, TRANSPORT, reqid 1, ESP SPIs: cb36f153_i ce686fdf_o
-#    vpsa-h101{1}:   10.2.8.223/32[tcp] === 10.2.8.33/32[tcp/iscsi-target]
+#    vpsa-<name>[1]: ESTABLISHED ... <client_storage_ip>...<vpsa_bebond_ip>
+#    vpsa-<name>{1}:  INSTALLED, TRANSPORT, reqid 1, ESP SPIs: ...
 ```
 
 **On VPSA VC:**
@@ -156,30 +152,17 @@ ip xfrm state list    # shows active ESP SAs with AES keys
 
 On the client server, while doing iSCSI IO or discovery:
 ```bash
-tcpdump -i vlan50 -nn host <vpsa_bebond_ip>
+tcpdump -i <storage_iface> -nn host <vpsa_bebond_ip>
 # Should show: ESP packets (proto 50), NOT plaintext iSCSI (port 3260 in clear)
 ```
 
 For Wireshark capture:
 ```bash
-tcpdump -i vlan50 -w /tmp/ipsec_capture.pcap host <vpsa_bebond_ip> -c 100
+tcpdump -i <storage_iface> -w /tmp/ipsec_capture.pcap host <vpsa_bebond_ip> -c 100
 # Copy pcap to Windows and open in Wireshark
 # Filter: esp    → all packets should be ESP
 # Filter: iscsi  → should show NOTHING (traffic is encrypted)
 ```
-
----
-
-## QA8 reference values (VPSA 4 / H101)
-
-| Item | Value |
-|------|-------|
-| VPSA novabridge | 10.0.8.33 |
-| VPSA bebond (storage) | 10.2.8.33 |
-| server223 storage IP | 10.2.8.223 |
-| PSK | B9A052CE851F4185AF255A02514F3612 |
-| Admin access key | TMY1JQLYRMSJJO5JI78E-3 |
-| Server name | srv-00000002 |
 
 ---
 

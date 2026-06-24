@@ -1,6 +1,7 @@
 ---
 name: zstorage-snreq
 description: Use when running remote SN operations via zadara_snreq.py — hardware info, networking config, drive import check, service status, license management, or system/drive performance thresholds. Tool handles SSH internally; add --target to run against a different SN.
+argument-hint: <sn-hostname>
 ---
 
 # zstorage-snreq
@@ -12,20 +13,11 @@ Run operations on Storage Nodes via `zadara_snreq.py` — the preferred tool for
 
 ## Connection
 
-Run on any SN with sudo. Hop via CCMaster → SN:
+Run on any SN with sudo. Hop via CCMaster → SN — see [[zstorage-ssh]] for patterns and IP discovery.
 
 ```bash
-# WSL / macOS / Linux (preferred)
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.121 \
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> \
-   'echo zadara | sudo -S zadara_snreq.py <subcommand> [--target <IP>]'"
-```
-
-```powershell
-# Windows fallback (plink.exe)
-$plink = "C:\Program Files\PuTTY\plink.exe"
-& $plink -batch -pw zadara -hostkey "SHA256:pAD98VJ8GVQv8h2lW0VEWoBPOIboYI8sDB/A1gy9QkU" zadara@172.16.7.121 `
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> 'echo zadara | sudo -S zadara_snreq.py <subcommand> [--target <IP>]'"
+# On the SN (as root):
+zadara_snreq.py <subcommand> [--target <IP>]
 ```
 
 Add `--target <IP>` to run against a remote SN. Default is localhost.

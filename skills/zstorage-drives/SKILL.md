@@ -22,7 +22,7 @@ Zadara drives store metadata in LVM VG tags (`cloud_uuid+<uuid>`, `qosgrp+<group
 
 ## Diagnostic commands
 
-Run on the affected **SN** (e.g., sn1 at 172.16.7.122):
+Run on the affected **SN** (SSH via CCMaster — see [[zstorage-ssh]] for IP discovery and patterns):
 
 ```bash
 # Check which drives are foreign

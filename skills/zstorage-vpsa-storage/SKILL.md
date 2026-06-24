@@ -1,6 +1,7 @@
 ---
 name: zstorage-vpsa-storage
 description: Use when creating VPSA storage resources — RAID groups, pools, volumes, server attachments, or iSCSI connections. Commands differ by generation: Gen2 uses create_raid_group then create_pool; Gen3 H100 uses create_pool_v3 directly. Includes iSCSI discovery and IO test.
+argument-hint: <vsa-id>
 ---
 
 # zstorage-vpsa-storage
@@ -169,9 +170,8 @@ dd if=/dev/urandom of=/dev/<device> bs=1M count=100 oflag=direct
 
 ---
 
-## QA8 reference values
+## Finding VPSA IPs
 
-| VPSA | Nova IP | Bebond IP | Access Key | Type |
-|------|---------|-----------|------------|------|
-| 4 (H101) | 10.0.8.33 | 10.2.8.33 | TMY1JQLYRMSJJO5JI78E-3 | Gen3 H100 |
-| 5 (IAM801) | 10.0.8.35 | 10.2.8.35 | (reset via GUI) | Gen2 blast |
+Get `$VC_IP` (novabridge) via `nova-manage vsa list --inst <vsa-id>` on CCMaster — see [[zstorage-ssh]] Finding IPs.  
+Get bebond IP: same last octet as nova IP, on the `10.2.x.x` subnet.  
+Get access key: use [[vpsa-api-key]] skill or VPSA GUI → Settings → API key.

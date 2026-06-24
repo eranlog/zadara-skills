@@ -1,6 +1,7 @@
 ---
 name: zstorage-containers
 description: Use when creating or managing Docker containers on a VPSA App Engine — setting up Container Service, creating image repository, pulling Docker Hub images, creating containers, or running containerized storage workloads on a Gen3 H100 VPSA.
+argument-hint: <vsa-id>
 ---
 
 # zstorage-containers
@@ -117,18 +118,14 @@ curl -sk "$BASE/api/containers.json?access_key=$KEY" -X POST \
 
 ---
 
-## QA8 reference (H101 — vsa-00000004)
+## Container Service defaults
 
-| Item | Value |
-|------|-------|
-| VPSA | H101 (vsa-00000004, Gen3 H100) |
-| Nova IP | 10.0.8.33 |
-| Bebond IP | 10.2.8.33 |
-| App Engine | 01 (active) |
-| Container Network | 172.20.20.1/24 |
-| Exposed Ports | 9216-10240 |
-| Pool for repo | pool1 (2.90 TiB, Balanced) |
-| Test image | fio (`mayadata/fio:latest`, img-00000001, 11 MiB) |
+| Setting | Default | Notes |
+|---------|---------|-------|
+| Container Network | 172.20.20.1/24 | Internal network for containers |
+| Exposed Ports | 9216-10240 | Port range exposed externally |
+
+For VPSA novabridge IP and VPSA IDs, see [[zstorage-environments]]. Get API access key via [[vpsa-api-key]].
 
 ---
 

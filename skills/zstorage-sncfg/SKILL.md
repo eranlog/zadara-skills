@@ -9,20 +9,11 @@ Run `zadara_sncfg` on a Storage Node — the tool that manages SN-level storage 
 
 ## Connection
 
-Run with sudo on any SN. Hop via CCMaster → SN:
+Run with sudo on any SN. Hop via CCMaster → SN — see [[zstorage-ssh]] for patterns and IP discovery.
 
 ```bash
-# WSL / macOS / Linux (preferred)
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.121 \
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> \
-   'echo zadara | sudo -S zadara_sncfg <subcommand> [args]'"
-```
-
-```powershell
-# Windows fallback (plink.exe)
-$plink = "C:\Program Files\PuTTY\plink.exe"
-& $plink -batch -pw zadara -hostkey "SHA256:pAD98VJ8GVQv8h2lW0VEWoBPOIboYI8sDB/A1gy9QkU" zadara@172.16.7.121 `
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> 'echo zadara | sudo -S zadara_sncfg <subcommand> [args]'"
+# On the SN (as root):
+zadara_sncfg <subcommand> [args]
 ```
 
 Use `--targetaddr <IP>` to run against a remote SN without hopping.

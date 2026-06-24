@@ -1,6 +1,7 @@
 ---
 name: zstorage-drbd
-description: Use when diagnosing or fixing DRBD replication on QA8 SNs — WFConnection peer unreachable, outdated peer after reconnect, split-brain (StandAlone on both nodes), or emergency force-primary recovery. Resource r0 replicates CCVM data disk between sn1 and sn2.
+description: Use when diagnosing or fixing DRBD replication on QA SNs — WFConnection peer unreachable, outdated peer after reconnect, split-brain (StandAlone on both nodes), or emergency force-primary recovery. Resource r0 replicates CCVM data disk between the HA pair.
+argument-hint: <sn-hostname>
 ---
 
 # zstorage-drbd
@@ -105,29 +106,12 @@ drbdadm primary --force r0
 
 ## Check DRBD status remotely
 
+SSH to CCMaster or directly to each SN — see [[zstorage-ssh]] for patterns and IP discovery.
+
 ```bash
-# WSL / macOS / Linux (preferred) — StrictHostKeyChecking=no avoids float-IP key changes
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.121 "cat /proc/drbd"
-# From sn1 directly:
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.122 "cat /proc/drbd"
-# From sn2 directly:
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.123 "cat /proc/drbd"
+# On any SN (as zadara):
+cat /proc/drbd
 ```
-
-```powershell
-# Windows fallback (plink.exe) — hostkey changes when CCMaster floats
-$plink = "C:\Program Files\PuTTY\plink.exe"
-& $plink -batch -pw zadara -hostkey "SHA256:vbaYTe2w9iIfJVoSwzdtZprjY7NJfovKCCYGIUcvc4E" `
-  zadara@172.16.7.121 "cat /proc/drbd"
-& $plink -batch -pw zadara -hostkey "SHA256:pAD98VJ8GVQv8h2lW0VEWoBPOIboYI8sDB/A1gy9QkU" `
-  zadara@172.16.7.122 "cat /proc/drbd"
-& $plink -batch -pw zadara -hostkey "SHA256:vbaYTe2w9iIfJVoSwzdtZprjY7NJfovKCCYGIUcvc4E" `
-  zadara@172.16.7.123 "cat /proc/drbd"
-```
-
-**Note:** Float IP `172.16.7.121` moves between sn1/sn2. With WSL/sshpass, `StrictHostKeyChecking=no` handles this automatically. With plink, swap hostkey if "host key not in list":
-- sn1: `SHA256:pAD98VJ8GVQv8h2lW0VEWoBPOIboYI8sDB/A1gy9QkU`
-- sn2: `SHA256:vbaYTe2w9iIfJVoSwzdtZprjY7NJfovKCCYGIUcvc4E`
 
 ---
 

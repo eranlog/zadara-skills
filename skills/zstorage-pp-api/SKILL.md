@@ -151,20 +151,12 @@ curl -sk \
 
 ## Access from WSL / CCMaster
 
-The portal hostname `yokneam-qa8.zadarastorage.com` resolves to the CCVM at `172.16.7.120` — accessible internally via CCMaster or from any machine with Zadara lab DNS.
+The portal hostname resolves to the CCVM. From WSL, curl directly if lab DNS/routing is configured. From CCMaster, SSH to CCVM and curl localhost — see [[zstorage-ssh]] for CCVM double-hop patterns.
 
-From WSL (resolves via public DNS → 172.16.7.120 — needs lab route):
 ```bash
-curl -sk -H "X-Token: <token>" "https://yokneam-qa8.zadarastorage.com/api/v3/clouds.json"
+# On CCVM:
+curl -sk -H "X-Token: <token>" "https://localhost/api/v3/clouds.json"
 ```
-
-From CCMaster (via CCVM localhost — most reliable):
-```bash
-sshpass -p 'Z@darA2o11' ssh -p 2022 -o StrictHostKeyChecking=no zadministrator@172.16.7.120 \
-  "curl -sk -H 'X-Token: <token>' https://localhost/api/v3/clouds.json"
-```
-
-Or run scripts via plink → CCMaster → CCVM.
 
 ---
 

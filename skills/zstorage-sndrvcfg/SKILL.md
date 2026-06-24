@@ -1,6 +1,7 @@
 ---
 name: zstorage-sndrvcfg
 description: Use when managing physical drive and RAID controller configuration on a Storage Node — MegaCLI/StorCLI drive import, cache policy check, RAID LD-to-PD mapping, or diagnosing missing drives via check_config. Wraps MegaCLI, StorCLI, and HPSA tools automatically.
+argument-hint: <sn-hostname>
 ---
 
 # zstorage-sndrvcfg
@@ -14,20 +15,11 @@ Internally calls `zadara_sncfg get_config` and `zadara_sncfg get_offline_drives`
 
 ## Connection
 
-Run with sudo on any SN. Hop via CCMaster → SN:
+Run with sudo on any SN. Hop via CCMaster → SN — see [[zstorage-ssh]] for patterns and IP discovery.
 
 ```bash
-# WSL / macOS / Linux (preferred)
-sshpass -p zadara ssh -o StrictHostKeyChecking=no zadara@172.16.7.121 \
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> \
-   'echo zadara | sudo -S zadara_sndrvcfg <action> [options]'"
-```
-
-```powershell
-# Windows fallback (plink.exe)
-$plink = "C:\Program Files\PuTTY\plink.exe"
-& $plink -batch -pw zadara -hostkey "SHA256:pAD98VJ8GVQv8h2lW0VEWoBPOIboYI8sDB/A1gy9QkU" zadara@172.16.7.121 `
-  "sshpass -p zadara ssh -o StrictHostKeyChecking=no <sn-hostname> 'echo zadara | sudo -S zadara_sndrvcfg <action> [options]'"
+# On the SN (as root):
+zadara_sndrvcfg <action> [options]
 ```
 
 ## Actions — Read / Inspect (safe)

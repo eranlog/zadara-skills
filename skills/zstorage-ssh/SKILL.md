@@ -29,7 +29,26 @@ SSH into any Zadara infrastructure node: CCMaster, CCVM, SN, or VPSA VC.
 | CCVM | `zadministrator` | `Z@darA2o11` | 2022 |
 | VPSA VC | `zadara` | `Z@darA2o11` | 2022 |
 
-**CCMaster float IP:** `172.16.7.121` (floats between sn1/sn2)
+**CCMaster float IP:** look up by environment in [[zstorage-environments]] (QA8 → `172.16.7.121`)
+
+---
+
+## Finding IPs
+
+Before connecting, you need three IPs. Discover them as follows:
+
+**CCMaster float** — look up the environment in [[zstorage-environments]]. E.g. QA8 CCMaster = `172.16.7.121`.
+
+**CCVM** — always CCMaster IP minus 1. E.g. `172.16.7.121` → CCVM = `172.16.7.120`. Port 2022.
+
+**SN IPs** — CCMaster minus 2, 3, 4… for sn1, sn2, sn3. Or: run `hostname` on CCMaster to find which SN is active, then look up the full table in [[zstorage-environments]].
+
+**Active VC IP** — run on CCMaster:
+```bash
+nova-manage vsa list --inst <vsa-id>
+```
+Find the row with role `A` (active). The first `10.0.x.x` in `fixed_IPs` is the VC management IP.
+Or use `scripts/get-active-vc-ip.sh <vsa-id>` from the skill repo.
 
 ---
 
