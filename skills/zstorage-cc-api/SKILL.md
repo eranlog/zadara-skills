@@ -74,12 +74,14 @@ Fill in the cloud name and token in the Authorize dialog. Note: Swagger "Execute
 3. Scroll to **API key** section — the token is shown in the input field
 4. Click **Regenerate** to create a new token (old token immediately invalidated)
 
-### Method 2 — CCVM MySQL
+### Method 2 — CCVM database
 
-SSH to CCVM (see [[zstorage-ssh]]), then run `scripts/cc-db-query.sh`:
+SSH to CCVM (see [[zstorage-ssh]]), then query the CC database directly.
+CC uses PostgreSQL on newer builds — check which is running:
 ```bash
-# On CCVM:
-mysql -u root command-center -e "SELECT email, authentication_token FROM users;"
+# On CCVM (try psql first, fall back to mysql):
+sudo -u postgres psql "command-center" -c "SELECT email, authentication_token FROM users LIMIT 5;" 2>/dev/null \
+  || mysql -u root "command-center" -e "SELECT email, authentication_token FROM users;" 2>/dev/null
 ```
 
 ## Notes

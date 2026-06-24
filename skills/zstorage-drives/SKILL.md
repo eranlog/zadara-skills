@@ -26,10 +26,10 @@ Run on the affected **SN** (SSH via CCMaster — see [[zstorage-ssh]] for IP dis
 
 ```bash
 # Check which drives are foreign
-python3 /var/lib/zadara/scripts/sn/zadara_sncfg get_config 2>&1 | grep -A5 qosgrp_foreign
+zadara_sncfg get_config 2>&1 | grep -A5 qosgrp_foreign
 
 # Check drives visible to nova (should match get_config minus foreign)
-python3 /var/lib/zadara/scripts/sn/zadara_sncfg get_qosgroups_xml 2>&1 | grep -c "<drive>"
+zadara_sncfg get_qosgroups_xml 2>&1 | grep -c "<drive>"
 
 # Check cloud_uuid on all VGs — compare against zconfig
 vgs -o tags 2>/dev/null | grep cloud_uuid
