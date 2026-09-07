@@ -97,6 +97,47 @@ VPSA GUI → Container Service → Containers → **CREATE CONTAINER**:
 
 Select the image, configure resources (CPU, memory from Container Memory Pool), network ports, and environment variables.
 
+**Port mapping field labels are reversed from what you'd expect** — this cost real
+time to figure out (2026-09-07). In the "Add Port Range" dialog:
+- **"User start port"** = the port **inside the container** (e.g. `22` for an sshd
+  container) — despite the name, this is NOT the externally-facing port.
+- **"Internal start port"** = the **host-facing/exposed** port (constrained to the
+  cloud's configured Exposed Ports range, e.g. `9216-10240` — the field enforces a
+  minimum matching that range, which is the tell that it's actually the external
+  side). Confirmed via `docker ps` after creation: `PORTS` column showed
+  `10.2.8.33:9216->22/tcp` — host port on the left, container port on the right, i.e.
+  exactly (Internal start port)->(User start port).
+
+So to expose a container's port 22 as 9216 externally: **User start port = 22**,
+**Internal start port = 9216**. Leave both "end port" fields blank for a single port
+(not a range).
+
+---
+
+## SSH-into-container testing (SOC2 "SSH into Docker Container should be possible")
+
+For testing that a Container Service container is reachable via real network SSH (not
+just `docker exec`), use the purpose-built image rather than building your own:
+
+**Docker Hub: `zadara/ssh`** — "A ssh container to connect to your VPSA. You will have
+access to mounted block and NAS shares." Default root password: `zadara` (change it).
+Documented usage: `ssh -p 9222 root@<your-vpsa-frontend-ip>` (9222 is just their
+example port — use whatever host port you mapped per the section above).
+
+**Confirmed gotcha: you cannot SSH into the container from the VC itself.**
+Connecting to the VC's own frontend IP + mapped port, *from a shell on that same VC*,
+fails with `ssh: connect to host <ip> port <port>: No route to host`. This is a
+"hairpin NAT" limitation — self-originated traffic to your own external IP doesn't
+traverse the DNAT/PREROUTING chain that maps the port into the container, so it never
+reaches it. This is NOT a bug — it's a standard Linux netfilter limitation, not
+VPSA-specific. **Test from a genuinely external client** (any other host that can
+reach the VPSA's frontend network) — from there it works exactly as documented:
+```
+ssh -p<host_port> root@<vpsa-frontend-ip> -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+```
+Confirmed 2026-09-07 on VPSA SOC2H101 (vsa-00000004): landed a real shell inside the
+container (hostname matched the container ID from `docker ps`).
+
 ---
 
 ## API — container operations
