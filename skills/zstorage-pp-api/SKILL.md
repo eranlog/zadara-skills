@@ -123,6 +123,15 @@ curl -sk -X POST \
   "https://yokneam-qa8.zadarastorage.com/api/v3/clouds/<cloud_id>/vpsas/<vpsa_id>/restore.json"
 ```
 
+### Set flash cache capacity
+```bash
+curl -sk -X POST \
+  -H "X-Token: <token>" \
+  -d "flash_cache_capacity=40" \
+  "https://yokneam-qa8.zadarastorage.com/api/v3/clouds/<cloud_id>/vpsas/<vpsa_id>/cache.json"
+```
+> Seen historically as a bare `/api/vpsas/<id>/cache.json` (no `/v3/clouds/<cloud_id>/` prefix) — a pre-versioning URL from an older environment. Not yet re-verified against the current v3 API on QA8; confirm the path works before relying on it.
+
 ---
 
 ## Users

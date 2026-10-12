@@ -129,3 +129,35 @@ curl -s -X POST "https://$VC_IP/api/users/login.json" \
 ```
 
 **Note:** The VPSA management IP for API access is the novabridge IP (`10.0.x.x`), accessible from SNs/CCMaster. The bebond IP (`10.2.x.x`) is for storage traffic only. See [[zstorage-environments]] for VPSA type mapping per environment.
+
+## Direct DB access (VPSA-GUI database)
+
+Each VPSA's GUI/Rails app has its own MySQL schema, named by numeric VPSA id:
+
+```sql
+show databases;              -- look for vsa_gui_<numeric_id>
+use vsa_gui_<numeric_id>;
+select * from users;         -- id, email, password_changed_at, ...
+```
+
+Credential retrieval for this local MySQL instance is not nailed down yet — `vc-ha --get_auth` (below) does **not** return it, despite older notes claiming it does. Still open.
+
+## `vc-ha --get_auth` — what it actually returns
+
+Older notes label this "get mysql root password." Live-tested on a QA8 NGOS VC (2026-10-11): it returns the VC's **cloud/tenant provisioning auth bundle**, not a DB credential:
+
+```xml
+<get-auth-response><auth_info><username>user_admin_...</username><email>qa@zadarastorage.com</email><tenant_id>2</tenant_id><tenant_name>tenant_admin_...</tenant_name><nova_password>...</nova_password><nova_provider>zadaraqa8</nova_provider><vpsa_username>admin</vpsa_username><vpsa_password_code>...</vpsa_password_code><cloud_uuid>...</cloud_uuid></auth_info><auth_token><token>...</token><expires>...</expires></auth_token></get-auth-response>
+```
+
+Useful for: the tenant's nova service password, the VPSA admin password *code* (obfuscated, not raw), `cloud_uuid`, a short-lived auth token. **Not** useful for local MySQL/DB access.
+
+On ZIOS/NGOS VCs this is backed by `vcHa.py` (plus `getHaState.py`, `haHearbeatConfigBasics.py`, `haSchemaUtils.py`) under the VC's scripts tree — if `get_auth` output ever needs to change, that's where to look.
+
+## VC cron
+
+`/etc/cron.d/zadara` on the VC runs an hourly NTP time sync. Comment out to freeze VC time for date-dependent testing:
+```
+# Hourly synchronize time
+#@hourly                root    /var/lib/zadara/scripts/utils/cron-ntpdate.sh
+```

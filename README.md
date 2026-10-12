@@ -34,6 +34,7 @@ Claude Code skills for Zadara infrastructure. Environment-agnostic — no hardco
 | [zstorage-sndrvcfg](skills/zstorage-sndrvcfg) | Storage Node drive configuration — import, renew, clean, check. |
 | [zstorage-drives](skills/zstorage-drives) | Fix drives invisible in CC — stale `cloud_uuid` LVM VG tags, non-destructive fix. |
 | [zstorage-drbd](skills/zstorage-drbd) | DRBD status, sync, split-brain recovery for HA SN pairs. |
+| [zstorage-sn-ha](skills/zstorage-sn-ha) | SN-level HA role control via `sn-ha-control` — activate/deactivate, status, node auth key. |
 
 ### Installation & Diagnostics
 

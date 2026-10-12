@@ -150,6 +150,24 @@ curl -sk "$BASE/api/servers.json?access_key=$KEY"
 
 ---
 
+## Inspect a single RAID group in detail
+
+`zadara_cfg` run directly on the active VC shell gives a fuller view than `raid_groups.json`:
+
+```bash
+# On the active VC:
+zadara_cfg show_one_raid_group --raidgroupname <raid-group-name>
+```
+
+Example output:
+```xml
+<?xml version="1.0" encoding="UTF-8" ?><show-one-raid-group-response><status type="integer">0</status><raid-group><name>SetupRaid-1</name><display-name>Setup</display-name><protection>RAID1</protection><mirror-num type="integer">2</mirror-num><status>Normal</status><disks-count type="integer">2</disks-count><disks type="array"><name>drive-000</name><name>drive-001</name></disks><volumes-count type="integer">0</volumes-count></raid-group></show-one-raid-group-response>
+```
+
+Note: the VC shell wrapper is `zadara_cfg` (no `.py`), and it does not accept `--pretty` — returns `error: no such option` if passed.
+
+---
+
 ## Connect iSCSI volume from Linux client
 
 After attaching volume to a server and iSCSI is configured, run `scripts/iscsi-connect-and-test.sh <vpsa_bebond_ip>` as root on the client server.
